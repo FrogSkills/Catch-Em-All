@@ -9,6 +9,7 @@ import SwiftUI
 
 struct DetailView: View {
     let creature: Creature
+    @State private var creatureDetail = CreatureDetail()
     
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
@@ -25,26 +26,37 @@ struct DetailView: View {
                 .padding(.bottom)
             
             HStack {
-                Image(systemName: "person")
-                    .resizable()
-                    .scaledToFit()
-                    .background(.white)
-                    .frame(width: 96, height: 96)
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 16)
-                            .stroke(.gray.opacity(0.5), lineWidth: 1)
-                    }
-                    .padding(.trailing)
+                AsyncImage(url: URL(string: creatureDetail.imageURL)) { image in
+                    image
+                    
+                        .resizable()
+                        .scaledToFit()
+                        .background(.white)
+                        .frame(width: 96, height: 96)
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                        .shadow(radius: 8, x: 5, y: 5)
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 16)
+                                .stroke(.gray.opacity(0.5), lineWidth: 1)
+                        }
+                        .padding(.trailing)
+                } placeholder: {
+                    RoundedRectangle(cornerRadius: 10)
+                        .foregroundStyle(.clear)
+                        .frame(width: 96, height: 96)
+                        .padding(.trailing)
+                }
                 
-                VStack {
+                //
+                
+                VStack (alignment: .leading) {
                     HStack(alignment: .top) {
                         Text("Height:")
                             .font(.title2)
                             .bold()
                             .foregroundStyle(.red)
                         
-                        Text("99")
+                        Text(String(format: "%.1f", creatureDetail.height))
                             .font(.largeTitle)
                             .bold()
                     }
@@ -54,7 +66,7 @@ struct DetailView: View {
                             .bold()
                             .foregroundStyle(.red)
                         
-                        Text("99")
+                        Text(String(format: "%.1f", creatureDetail.weight))
                             .font(.largeTitle)
                             .bold()
                     }
@@ -63,6 +75,10 @@ struct DetailView: View {
             Spacer()
         }
         .padding()
+        .task {
+            creatureDetail.urlString = creature.url
+            await creatureDetail.getData()
+        }
     }
 }
 

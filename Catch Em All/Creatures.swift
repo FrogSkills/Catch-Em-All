@@ -12,7 +12,7 @@ import Foundation
 class Creatures {
     private struct Returned: Codable {
         var count: Int
-        var next: String //TODO: We want to change this to an optional
+        var next: String? //TODO: We want to change this to an optional
         // we add a Results array that is later defined as a Result structure, which holds name and url from the web.
         var results: [Creature]
     }
@@ -27,14 +27,17 @@ class Creatures {
     var urlString = "https://pokeapi.co/api/v2/pokemon"
     var count = 0
     var creaturesArray: [Creature] = []
+    var isLoading = false
     
     // this function or the "var urlString" is the first thing we do after creating the class.
     func getData() async {
         print("🕸️ We are accesing the URL \(urlString)")
+        isLoading = true
         
         // Create a URL
         guard let url = URL(string: urlString) else {
             print("😡 Error: Could not create a URL from \(urlString)")
+            isLoading = false
             return
         }
         
@@ -44,13 +47,25 @@ class Creatures {
             // Try to decode JSON data into our own data structures
             guard let returned = try?  JSONDecoder().decode(Returned.self, from: data) else {
                 print("😡 JSON Error: Could not decode returned JSON data")
+                isLoading = false
                 return
             }
-            self.count = returned.count
-            self.urlString = returned.next
-            self.creaturesArray = returned.results
+            Task { @MainActor in
+                self.count = returned.count
+                self.urlString = returned.next ?? ""
+                self.creaturesArray = self.creaturesArray + returned.results
+                isLoading = false
+            }
         } catch {
             print("😡 ERROR: Could not get data from \(urlString)")
+            isLoading = false
+        }
+    }
+    func loadAll() async {
+        Task { @MainActor in
+            guard urlString.hasPrefix("http") else { return}
+            await getData()
+            await loadAll()
         }
     }
 }
